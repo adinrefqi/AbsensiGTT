@@ -21,13 +21,14 @@ const registerSchema = z.object({
   email: z.string().email("Email tidak valid"),
   password: z.string().min(6, "Password minimal 6 karakter"),
   confirmPassword: z.string().min(6, "Konfirmasi password minimal 6 karakter"),
-  role: z.enum(["ADMIN", "GURU", "MANAGER"], {
-    required_error: "Pilih role akun",
-  }),
+  role: z.enum(["ADMIN", "GURU", "MANAGER"]),
   phone: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Password tidak cocok",
   path: ["confirmPassword"],
+}).refine((data) => data.role, {
+  message: "Pilih role akun",
+  path: ["role"],
 });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
