@@ -136,7 +136,7 @@ export function Sidebar({ role, userName }: SidebarProps) {
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-16 bg-background/95 backdrop-blur-md border-b flex items-center px-4">
         <Sheet>
-          <SheetTrigger asChild>
+          <SheetTrigger>
             <Button variant="outline" size="icon" className="h-10 w-10 shrink-0">
               <Menu className="h-5 w-5" />
             </Button>
