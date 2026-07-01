@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Loader2, Eye, EyeOff, UserPlus } from "lucide-react";
@@ -21,7 +21,9 @@ const registerSchema = z.object({
   email: z.string().email("Email tidak valid"),
   password: z.string().min(6, "Password minimal 6 karakter"),
   confirmPassword: z.string().min(6, "Konfirmasi password minimal 6 karakter"),
-  role: z.enum(["ADMIN", "GURU", "MANAGER"]),
+  role: z.enum(["ADMIN", "GURU", "MANAGER"], {
+    required_error: "Pilih role akun",
+  }),
   phone: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Password tidak cocok",
@@ -39,21 +41,21 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
+    defaultValues: {
+      role: undefined,
+    },
   });
-
-  const selectedRole = watch("role");
 
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
     try {
       const { data: authData, error } = await signUp(data.email, data.password, {
         full_name: data.full_name,
-        role: data.role as UserRole,
+        role: data.role,
         phone: data.phone,
       });
 
@@ -136,24 +138,27 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="role" className="text-sm font-medium">
-                Role Akun
+              <Label className="text-sm font-medium">
+                Role Akun <span className="text-destructive">*</span>
               </Label>
-              <Select
-                onValueChange={(value) => value && setValue("role", value as UserRole)}
-                value={selectedRole}
-              >
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Pilih role akun" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                  <SelectItem value="GURU">Guru (GTT)</SelectItem>
-                  <SelectItem value="MANAGER">Manager / Kepala Sekolah</SelectItem>
-                </SelectContent>
-              </Select>
+              <Controller
+                name="role"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Pilih role akun" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ADMIN">Admin</SelectItem>
+                      <SelectItem value="GURU">Guru (GTT)</SelectItem>
+                      <SelectItem value="MANAGER">Manager / Kepala Sekolah</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.role && (
-                <p className="text-sm text-destructive">{errors.role.message}</p>
+                <p className="text-sm text-destructive">{errors.role.message?.toString()}</p>
               )}
             </div>
 
