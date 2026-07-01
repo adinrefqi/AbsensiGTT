@@ -14,12 +14,12 @@ import {
   LogOut,
   GraduationCap,
   Menu,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { signOut } from "@/lib/supabase/auth";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 interface NavItem {
   href: string;
@@ -28,23 +28,29 @@ interface NavItem {
 }
 
 const adminNav: NavItem[] = [
-  { href: "/admin", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
-  { href: "/admin/guru", label: "Kelola Guru", icon: <Users className="h-5 w-5" /> },
-  { href: "/admin/sekolah", label: "Kelola Sekolah", icon: <Building2 className="h-5 w-5" /> },
-  { href: "/admin/user", label: "Kelola User", icon: <UserCog className="h-5 w-5" /> },
+  { href: "/dashboard/admin", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
+  { href: "/dashboard/admin/guru", label: "Kelola Guru", icon: <Users className="h-5 w-5" /> },
+  { href: "/dashboard/admin/sekolah", label: "Kelola Sekolah", icon: <Building2 className="h-5 w-5" /> },
+  { href: "/dashboard/admin/user", label: "Kelola User", icon: <UserCog className="h-5 w-5" /> },
 ];
 
 const guruNav: NavItem[] = [
-  { href: "/guru", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
-  { href: "/guru/absensi", label: "Absensi", icon: <ClipboardCheck className="h-5 w-5" /> },
-  { href: "/guru/riwayat", label: "Riwayat", icon: <History className="h-5 w-5" /> },
+  { href: "/dashboard/guru", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
+  { href: "/dashboard/guru/absensi", label: "Absensi", icon: <ClipboardCheck className="h-5 w-5" /> },
+  { href: "/dashboard/guru/riwayat", label: "Riwayat", icon: <History className="h-5 w-5" /> },
 ];
 
 const managerNav: NavItem[] = [
-  { href: "/manager", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
-  { href: "/manager/absensi", label: "Absensi", icon: <ClipboardCheck className="h-5 w-5" /> },
-  { href: "/manager/laporan", label: "Laporan", icon: <FileSpreadsheet className="h-5 w-5" /> },
+  { href: "/dashboard/manager", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
+  { href: "/dashboard/manager/absensi", label: "Absensi", icon: <ClipboardCheck className="h-5 w-5" /> },
+  { href: "/dashboard/manager/laporan", label: "Laporan", icon: <FileSpreadsheet className="h-5 w-5" /> },
 ];
+
+const roleConfig = {
+  ADMIN: { label: "Admin", color: "bg-red-500/10 text-red-600" },
+  GURU: { label: "Guru", color: "bg-blue-500/10 text-blue-600" },
+  MANAGER: { label: "Manager", color: "bg-green-500/10 text-green-600" },
+};
 
 interface SidebarProps {
   role: "ADMIN" | "GURU" | "MANAGER";
@@ -67,12 +73,14 @@ export function Sidebar({ role, userName }: SidebarProps) {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
-        <div className="p-2 bg-primary rounded-lg">
-          <GraduationCap className="h-6 w-6 text-primary-foreground" />
+        <div className="p-2 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/25">
+          <GraduationCap className="h-6 w-6 text-white" />
         </div>
-        <div>
-          <h2 className="font-bold text-sidebar-foreground">Absensi GTT</h2>
-          <p className="text-xs text-sidebar-foreground/60 capitalize">{role.toLowerCase()}</p>
+        <div className="flex-1 min-w-0">
+          <h2 className="font-bold text-sidebar-foreground truncate">Absensi GTT</h2>
+          <Badge className={cn("text-[10px] px-1.5 py-0 font-medium mt-1", roleConfig[role].color)}>
+            {roleConfig[role].label}
+          </Badge>
         </div>
       </div>
 
@@ -85,13 +93,13 @@ export function Sidebar({ role, userName }: SidebarProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-0.5"
               )}
             >
-              {item.icon}
+              <span className={cn(isActive && "drop-shadow-sm")}>{item.icon}</span>
               {item.label}
             </Link>
           );
@@ -100,15 +108,15 @@ export function Sidebar({ role, userName }: SidebarProps) {
 
       {/* User & Logout */}
       <div className="px-3 py-4 border-t border-sidebar-border">
-        <div className="px-3 py-2 mb-2">
+        <div className="px-3 py-2 mb-2 bg-sidebar-accent/30 rounded-lg">
           <p className="text-sm font-medium text-sidebar-foreground truncate">
             {userName || "User"}
           </p>
-          <p className="text-xs text-sidebar-foreground/60">{role}</p>
+          <p className="text-xs text-sidebar-foreground/50 capitalize">{role.toLowerCase()}</p>
         </div>
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-red-400 hover:bg-red-500/10 transition-colors"
           onClick={handleLogout}
         >
           <LogOut className="h-5 w-5" />
@@ -121,23 +129,32 @@ export function Sidebar({ role, userName }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 bg-sidebar">
+      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 bg-sidebar shadow-xl">
         <NavContent />
       </aside>
 
-      {/* Mobile Sidebar */}
-      <Sheet>
-        <SheetTrigger
-          render={
-            <Button variant="outline" size="icon" className="h-10 w-10 lg:hidden" />
-          }
-        >
-          <Menu className="h-5 w-5" />
-        </SheetTrigger>
-        <SheetContent side="left" className="w-64 p-0 bg-sidebar border-sidebar-border">
-          <NavContent />
-        </SheetContent>
-      </Sheet>
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-16 bg-background/95 backdrop-blur-md border-b flex items-center px-4">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon" className="h-10 w-10 shrink-0">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-72 p-0 bg-sidebar border-sidebar-border">
+            <NavContent />
+          </SheetContent>
+        </Sheet>
+        <div className="flex items-center gap-2 ml-3">
+          <div className="p-1.5 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg">
+            <GraduationCap className="h-5 w-5 text-white" />
+          </div>
+          <span className="font-bold">Absensi GTT</span>
+        </div>
+      </div>
+
+      {/* Mobile padding */}
+      <div className="lg:hidden h-16" />
     </>
   );
 }

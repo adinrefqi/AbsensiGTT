@@ -32,10 +32,10 @@ export default async function DashboardLayout({
   const role = profile.role as UserRole;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <Sidebar role={role} userName={profile.full_name} />
       <main className="lg:pl-64">
-        <div className="container mx-auto p-6">{children}</div>
+        <div className="container mx-auto p-4 md:p-6 lg:p-8">{children}</div>
       </main>
     </div>
   );
