@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Header } from "@/components/layout/Header";
 import type { UserRole } from "@/types";
 
 export default async function DashboardPage() {
@@ -30,11 +29,11 @@ export default async function DashboardPage() {
   // Redirect based on role
   switch (role) {
     case "ADMIN":
-      redirect("/admin");
+      redirect("/dashboard/admin");
     case "GURU":
-      redirect("/guru");
+      redirect("/dashboard/guru");
     case "MANAGER":
-      redirect("/manager");
+      redirect("/dashboard/manager");
     default:
       redirect("/login");
   }
