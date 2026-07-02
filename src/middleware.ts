@@ -1,39 +1,35 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // Protected routes that require authentication
+  // Protected routes
   const protectedRoutes = ["/dashboard"];
   const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
+    request.nextUrl.pathname.startsWith(route)
   );
 
   // Public routes
   const publicRoutes = ["/login", "/register", "/"];
-  const isPublicRoute = publicRoutes.some((route) => pathname === route);
+  const isPublicRoute = publicRoutes.some(
+    (route) => request.nextUrl.pathname === route
+  );
 
   if (isProtectedRoute) {
-    try {
-      const supabase = await createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const supabaseResponse = await updateSession(request);
 
-      if (!user) {
-        const loginUrl = new URL("/login", request.url);
-        loginUrl.searchParams.set("redirect", pathname);
-        return NextResponse.redirect(loginUrl);
-      }
-    } catch (error) {
-      // If Supabase fails, redirect to login
-      const loginUrl = new URL("/login", request.url);
-      return NextResponse.redirect(loginUrl);
+    // Check if user is authenticated by looking at cookies
+    const userCookie = request.cookies.get("sb-access-token") ||
+                       request.cookies.get("supabase-auth-token") ||
+                       request.cookies.getAll().find(c => c.name.includes("auth-token") || c.name.includes("access-token"));
+
+    if (!userCookie) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
     }
+
+    return supabaseResponse;
   }
 
-  return NextResponse.next({
-    request,
-  });
+  return await updateSession(request);
 }

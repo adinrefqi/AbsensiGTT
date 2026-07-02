@@ -45,8 +45,9 @@ export default function LoginPage() {
       }
 
       toast.success("Login berhasil!");
-      router.push("/dashboard");
-      router.refresh();
+
+      // Full page reload to ensure cookies are set
+      window.location.href = "/dashboard";
     } catch (error) {
       toast.error("Terjadi kesalahan. Silakan coba lagi.");
     } finally {
