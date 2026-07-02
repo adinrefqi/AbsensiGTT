@@ -89,7 +89,7 @@ export default function RegisterPage() {
               Daftar untuk mengakses Absensi GTT
             </p>
           </div>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="full_name" className="text-sm font-medium">
                 Nama Lengkap
@@ -97,6 +97,7 @@ export default function RegisterPage() {
               <Input
                 id="full_name"
                 type="text"
+                autoComplete="name"
                 placeholder="Masukkan nama lengkap"
                 className="h-11"
                 {...register("full_name")}
@@ -114,6 +115,7 @@ export default function RegisterPage() {
               <Input
                 id="email"
                 type="email"
+                autoComplete="email"
                 placeholder="nama@email.com"
                 className="h-11"
                 {...register("email")}
@@ -131,6 +133,7 @@ export default function RegisterPage() {
               <Input
                 id="phone"
                 type="tel"
+                autoComplete="tel"
                 placeholder="08xxxxxxxxxx"
                 className="h-11"
                 {...register("phone")}
