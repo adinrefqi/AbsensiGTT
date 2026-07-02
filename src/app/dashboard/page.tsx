@@ -1,41 +1,77 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import type { UserRole } from "@/types";
+"use client";
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default function DashboardPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const supabase = createClient();
 
-  if (!user) {
-    redirect("/login");
+  useEffect(() => {
+    checkUser();
+  }, []);
+
+  const checkUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+
+      // Get profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile) {
+        router.push("/login");
+        return;
+      }
+
+      setUser(user);
+
+      // Redirect based on role
+      const role = profile.role;
+      switch (role) {
+        case "ADMIN":
+          router.replace("/dashboard/admin");
+          break;
+        case "GURU":
+          router.replace("/dashboard/guru");
+          break;
+        case "MANAGER":
+          router.replace("/dashboard/manager");
+          break;
+        default:
+          router.push("/login");
+      }
+    } catch (error) {
+      console.error("Auth error:", error);
+      router.push("/login");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
-  // Get user profile with role
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  // If no profile or error, redirect to login
-  if (error || !profile) {
-    redirect("/login");
-  }
-
-  const role = profile.role as UserRole;
-
-  // Redirect based on role
-  switch (role) {
-    case "ADMIN":
-      redirect("/dashboard/admin");
-    case "GURU":
-      redirect("/dashboard/guru");
-    case "MANAGER":
-      redirect("/dashboard/manager");
-    default:
-      redirect("/login");
-  }
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p>Redirecting...</p>
+    </div>
+  );
 }
