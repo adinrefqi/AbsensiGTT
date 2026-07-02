@@ -13,14 +13,15 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Get user profile
-  const { data: profile } = await supabase
+  // Get user profile with role
+  const { data: profile, error } = await supabase
     .from("profiles")
-    .select("full_name, role")
+    .select("role")
     .eq("id", user.id)
     .single();
 
-  if (!profile) {
+  // If no profile or error, redirect to login
+  if (error || !profile) {
     redirect("/login");
   }
 
