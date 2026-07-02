@@ -22,13 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Pencil, Trash2, Users } from "lucide-react";
@@ -64,15 +58,13 @@ export default function KelolaGuruPage() {
       .from("teachers")
       .select(`
         *,
-        profile:profiles(*),
-        teacher_schools(school_id)
+        profile:profiles(*)
       `);
 
     if (teachersData) {
       const teachersWithProfile = teachersData.map((t: any) => ({
         ...t.profile,
         subjects: t.subjects || [],
-        schools: t.teacher_schools?.map((ts: any) => ts.school_id) || [],
       }));
       setTeachers(teachersWithProfile);
     }
@@ -105,7 +97,7 @@ export default function KelolaGuruPage() {
   const openEditDialog = (teacher: TeacherWithProfile) => {
     setSelectedTeacher(teacher);
     setFormData({
-      email: teacher.email,
+      email: teacher.email || "",
       full_name: teacher.full_name,
       password: "",
       phone: teacher.phone || "",
@@ -124,7 +116,6 @@ export default function KelolaGuruPage() {
     setSubmitting(true);
     try {
       if (selectedTeacher) {
-        // Update existing teacher
         const { error: profileError } = await supabase
           .from("profiles")
           .update({
@@ -135,33 +126,11 @@ export default function KelolaGuruPage() {
 
         if (profileError) throw profileError;
 
-        const subjects = formData.subjects.split(",").map((s) => s.trim()).filter(Boolean);
-
-        const { error: teacherError } = await supabase
-          .from("teachers")
-          .update({ subjects })
-          .eq("user_id", selectedTeacher.id);
-
-        if (teacherError) throw teacherError;
-
-        // Update school assignments
-        await supabase
-          .from("teacher_schools")
-          .delete()
-          .eq("teacher_id", selectedTeacher.id);
-
-        for (const school_id of formData.school_ids) {
-          await supabase.from("teacher_schools").insert({
-            teacher_id: selectedTeacher.id,
-            school_id,
-          });
-        }
-
         toast.success("Data guru berhasil diperbarui");
       } else {
-        // Create new teacher
         if (!formData.email || !formData.password || !formData.full_name) {
           toast.error("Email, password, dan nama wajib diisi");
+          setSubmitting(false);
           return;
         }
 
@@ -180,7 +149,6 @@ export default function KelolaGuruPage() {
 
         await supabase.from("profiles").insert({
           id: userId,
-          email: formData.email,
           full_name: formData.full_name,
           role: "GURU",
           phone: formData.phone || null,
@@ -188,19 +156,13 @@ export default function KelolaGuruPage() {
 
         const subjects = formData.subjects.split(",").map((s) => s.trim()).filter(Boolean);
 
-        const { error: teacherError } = await supabase.from("teachers").insert({
+        await supabase.from("teachers").insert({
           user_id: userId,
+          full_name: formData.full_name,
+          email: formData.email,
           subjects,
+          phone: formData.phone || null,
         });
-
-        if (teacherError) throw teacherError;
-
-        for (const school_id of formData.school_ids) {
-          await supabase.from("teacher_schools").insert({
-            teacher_id: userId,
-            school_id,
-          });
-        }
 
         toast.success("Guru baru berhasil ditambahkan");
       }
@@ -218,10 +180,7 @@ export default function KelolaGuruPage() {
     if (!selectedTeacher) return;
     setSubmitting(true);
     try {
-      // Delete teacher record
       await supabase.from("teachers").delete().eq("user_id", selectedTeacher.id);
-
-      // Delete profile (this will cascade to auth if configured)
       await supabase.from("profiles").delete().eq("id", selectedTeacher.id);
 
       toast.success("Guru berhasil dihapus");
@@ -286,19 +245,10 @@ export default function KelolaGuruPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditDialog(teacher)}
-                        >
+                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(teacher)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openDeleteDialog(teacher)}
-                          className="text-destructive hover:text-destructive"
-                        >
+                        <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(teacher)} className="text-destructive hover:text-destructive">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -311,17 +261,12 @@ export default function KelolaGuruPage() {
         </div>
       )}
 
-      {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {selectedTeacher ? "Edit Guru" : "Tambah Guru Baru"}
-            </DialogTitle>
+            <DialogTitle>{selectedTeacher ? "Edit Guru" : "Tambah Guru Baru"}</DialogTitle>
             <DialogDescription>
-              {selectedTeacher
-                ? "Perbarui data guru di bawah ini"
-                : "Isi data guru baru di bawah ini"}
+              {selectedTeacher ? "Perbarui data guru di bawah ini" : "Isi data guru baru di bawah ini"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -329,71 +274,29 @@ export default function KelolaGuruPage() {
               <>
                 <div className="space-y-2">
                   <Label>Email</Label>
-                  <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="guru@email.com"
-                  />
+                  <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="guru@email.com" />
                 </div>
                 <div className="space-y-2">
                   <Label>Password</Label>
-                  <Input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Minimal 6 karakter"
-                  />
+                  <Input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder="Minimal 6 karakter" />
                 </div>
               </>
             )}
             <div className="space-y-2">
               <Label>Nama Lengkap</Label>
-              <Input
-                value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                placeholder="Nama lengkap"
-              />
+              <Input value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} placeholder="Nama lengkap" />
             </div>
             <div className="space-y-2">
               <Label>No. Telepon</Label>
-              <Input
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="08xxxxxxxxxx"
-              />
+              <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="08xxxxxxxxxx" />
             </div>
             <div className="space-y-2">
               <Label>Mata Pelajaran</Label>
-              <Input
-                value={formData.subjects}
-                onChange={(e) => setFormData({ ...formData, subjects: e.target.value })}
-                placeholder="Matematika, Bahasa Inggris (pisahkan dengan koma)"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Sekolah</Label>
-              <Select
-                value={formData.school_ids[0] || ""}
-                onValueChange={(value) => value && setFormData({ ...formData, school_ids: [value] })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih sekolah" />
-                </SelectTrigger>
-                <SelectContent>
-                  {schools.map((school) => (
-                    <SelectItem key={school.id} value={school.id}>
-                      {school.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input value={formData.subjects} onChange={(e) => setFormData({ ...formData, subjects: e.target.value })} placeholder="Matematika, Bahasa Inggris (pisahkan dengan koma)" />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Batal
-            </Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>Batal</Button>
             <Button onClick={handleSubmit} disabled={submitting}>
               {submitting ? "Menyimpan..." : selectedTeacher ? "Simpan" : "Tambah"}
             </Button>
@@ -401,20 +304,16 @@ export default function KelolaGuruPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Hapus Guru</DialogTitle>
             <DialogDescription>
-              Apakah Anda yakin ingin menghapus guru "{selectedTeacher?.full_name}"? Tindakan ini
-              tidak dapat dibatalkan.
+              Apakah Anda yakin ingin menghapus guru "{selectedTeacher?.full_name}"? Tindakan ini tidak dapat dibatalkan.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              Batal
-            </Button>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Batal</Button>
             <Button variant="destructive" onClick={handleDelete} disabled={submitting}>
               {submitting ? "Menghapus..." : "Hapus"}
             </Button>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Loader2, Eye, EyeOff, UserPlus } from "lucide-react";
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
 import { signUp } from "@/lib/supabase/auth";
 import { z } from "zod";
 import type { UserRole } from "@/types";
@@ -21,14 +21,11 @@ const registerSchema = z.object({
   email: z.string().email("Email tidak valid"),
   password: z.string().min(6, "Password minimal 6 karakter"),
   confirmPassword: z.string().min(6, "Konfirmasi password minimal 6 karakter"),
-  role: z.enum(["ADMIN", "GURU", "MANAGER"]),
+  role: z.string().min(1, "Pilih role akun"),
   phone: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Password tidak cocok",
   path: ["confirmPassword"],
-}).refine((data) => data.role, {
-  message: "Pilih role akun",
-  path: ["role"],
 });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
@@ -42,21 +39,21 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    control,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
-    defaultValues: {
-      role: undefined,
-    },
   });
+
+  const selectedRole = watch("role");
 
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
     try {
       const { data: authData, error } = await signUp(data.email, data.password, {
         full_name: data.full_name,
-        role: data.role,
+        role: data.role as UserRole,
         phone: data.phone,
       });
 
@@ -97,7 +94,6 @@ export default function RegisterPage() {
               <Input
                 id="full_name"
                 type="text"
-                autoComplete="name"
                 placeholder="Masukkan nama lengkap"
                 className="h-11"
                 {...register("full_name")}
@@ -115,7 +111,6 @@ export default function RegisterPage() {
               <Input
                 id="email"
                 type="email"
-                autoComplete="email"
                 placeholder="nama@email.com"
                 className="h-11"
                 {...register("email")}
@@ -133,7 +128,6 @@ export default function RegisterPage() {
               <Input
                 id="phone"
                 type="tel"
-                autoComplete="tel"
                 placeholder="08xxxxxxxxxx"
                 className="h-11"
                 {...register("phone")}
@@ -142,27 +136,22 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium">
+              <Label htmlFor="role" className="text-sm font-medium">
                 Role Akun <span className="text-destructive">*</span>
               </Label>
-              <Controller
-                name="role"
-                control={control}
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Pilih role akun" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ADMIN">Admin</SelectItem>
-                      <SelectItem value="GURU">Guru (GTT)</SelectItem>
-                      <SelectItem value="MANAGER">Manager / Kepala Sekolah</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+              <Select
+                id="role"
+                className="h-11"
+                {...register("role")}
+                disabled={isLoading}
+              >
+                <option value="">Pilih role akun</option>
+                <option value="ADMIN">Admin</option>
+                <option value="GURU">Guru (GTT)</option>
+                <option value="MANAGER">Manager / Kepala Sekolah</option>
+              </Select>
               {errors.role && (
-                <p className="text-sm text-destructive">{errors.role.message?.toString()}</p>
+                <p className="text-sm text-destructive">{errors.role.message}</p>
               )}
             </div>
 
